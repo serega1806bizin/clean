@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Квіз прибирання</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="style.css" />
+
+    <style></style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="frame">
+        <div class="grid">
+          <section class="left">
+            <div class="quiz-progress">
+              <div class="quiz-progress__fill" id="progressFill"></div>
+
+              <div class="quiz-progress__text" id="stepLabel">
+                Ви відповідаєте на питання 1 з 4
+              </div>
+            </div>
+
+            <h1 id="questionTitle">
+              <span class="line1">Де потрібно</span>
+              <span class="line2">зробити прибирання?</span>
+            </h1>
+
+            <div class="options" id="options"></div>
+
+            <div class="nav">
+              <button class="btn" id="btnBack" type="button">Назад</button>
+            </div>
+          </section>
+
+          <aside class="right" id="rightPanel">
+            <!-- Default right card -->
+            <div class="card" id="defaultCard">
+              <div class="intro">
+                <div class="hero">
+                  <div class="person">
+                    <img src="woman.png" alt="Менеджер" />
+                  </div>
+                </div>
+
+                <div class="pitch">
+                  Дайте відповідь на запитання,
+                  <small>щоб ми могли розрахувати вартість</small>
+                </div>
+              </div>
+              <div class="benefits">
+                <div class="benefitsTitle">В кінці теста ви отримаєте:</div>
+                <div class="benefitsRow">
+                  <div class="benefit">
+                    Розрахунок вартості<br />та строків роботи
+                  </div>
+                  <div class="benefit">Знижку 10%<br />на перше прибирання</div>
+                  <div class="benefit">1 з 3<br />подарунків на вибір</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Final view (hidden until step 5) -->
+            <div id="finalView" style="display: none">
+              <h2 class="finalTitle">Ваш розрахунок вартості готовий!</h2>
+              <p class="finalSubtitle">Де вам зручніше отримати результат?</p>
+
+              <div class="finalCard">
+                <div class="channelRow" id="channelRow">
+                  <div class="chip" data-channel="phone" data-on="true">
+                    Телефон
+                  </div>
+                  <div class="chip" data-channel="whatsapp">WhatsApp</div>
+                  <div class="chip" data-channel="telegram">Telegram</div>
+                  <div class="chip" data-channel="viber">Viber</div>
+                </div>
+
+                <div class="phoneRow">
+                  <div class="flag">🇺🇦 +380</div>
+                  <input
+                    class="input"
+                    id="phoneInput"
+                    inputmode="tel"
+                    placeholder="(__) ___ __ __"
+                  />
+                </div>
+
+                <label class="agree">
+                  <input type="checkbox" id="agreeChk" />
+                  <span>Я погоджуюсь з політикою конфіденційності</span>
+                </label>
+
+                <button class="finalBtn" id="submitBtn" type="button" disabled>
+                  Отримати точний розрахунок вартості
+                </button>
+              </div>
+
+              <div class="mini" id="miniSocialProof">
+                Вже 22 472 людини скористалось послугами
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast">Готово</div>
+
+    <script>
+      // ========= Config (вопросы/варианты) =========
+      const steps = [
+        {
+          key: "place",
+          title: "Де потрібно<br>зробити прибирання?",
+          options: [
+            { label: "Квартира", value: "apartment" },
+            { label: "Приватний будинок", value: "house" },
+            { label: "Офіс/комерційне приміщення", value: "office" },
+            { label: "Двір/Будівництво", value: "yard" },
+            { label: "Інше", value: "other" },
+          ],
+        },
+        {
+          key: "service",
+          title: "Яке прибирання вам потрібно зараз?",
+          options: [
+            { label: "Генеральне прибирання", value: "general" },
+            { label: "Після ремонту", value: "after_renovation" },
+            { label: "Хімчистка меблів/килимів", value: "dry_cleaning" },
+            { label: "Миття вікон", value: "windows" },
+            { label: "Інше", value: "other" },
+          ],
+        },
+        {
+          key: "area",
+          title: "Яка площа приміщення (приблизно)?",
+          options: [
+            { label: "До 40м²", value: "0-40" },
+            { label: "40–80м²", value: "40-80" },
+            { label: "80–150м²", value: "80-150" },
+            { label: "Більше 150м²", value: "150+" },
+            { label: "Не знаю/допоможіть визначити", value: "unknown" },
+          ],
+        },
+        {
+          key: "urgency",
+          title: "Як швидко вам потрібно виконати прибирання?",
+          options: [
+            { label: "Сьогодні", value: "today" },
+            { label: "Протягом 1–2 днів", value: "1-2days" },
+            { label: "На вихідних", value: "weekend" },
+            { label: "Протягом тижня", value: "week" },
+            { label: "Не терміново", value: "not_urgent" },
+          ],
+        },
+      ];
+
+      // ========= State =========
+      const state = {
+        stepIndex: 0,
+        isTransitioning: false,
+        answers: {
+          place: null,
+          service: null,
+          area: null,
+          urgency: null,
+        },
+        channel: "phone",
+        phone: "",
+        agreed: false,
+      };
+
+      // ========= DOM =========
+      const questionTitle = document.getElementById("questionTitle");
+      const optionsEl = document.getElementById("options");
+      const btnBack = document.getElementById("btnBack");
+      const progressBar = document.getElementById("progressBar");
+      const stepLabel = document.getElementById("stepLabel");
+
+      const defaultCard = document.getElementById("defaultCard");
+      const finalView = document.getElementById("finalView");
+      const channelRow = document.getElementById("channelRow");
+      const phoneInput = document.getElementById("phoneInput");
+      const agreeChk = document.getElementById("agreeChk");
+      const submitBtn = document.getElementById("submitBtn");
+      const toast = document.getElementById("toast");
+
+      // ========= Helpers =========
+      function showToast(text) {
+        toast.textContent = text;
+        toast.classList.add("on");
+        setTimeout(() => toast.classList.remove("on"), 1600);
+      }
+
+      function setProgress() {
+        const total = steps.length;
+        const current = Math.min(state.stepIndex + 1, total);
+
+        const fill = document.getElementById("progressFill");
+
+        const MAX_FILL = 85;
+        const percent = (current / total) * MAX_FILL;
+
+        fill.style.width = `calc(${percent}% - 12px)`;
+
+        stepLabel.textContent = `Ви відповідаєте на питання ${current} з ${total}`;
+      }
+
+      function renderStep() {
+        // --- анимация выхода ---
+        questionTitle.classList.add("fade-out");
+        optionsEl.classList.add("fade-out");
+
+        setTimeout(() => {
+          // ====== ФИНАЛ ======
+          if (state.stepIndex >= steps.length) {
+            questionTitle.innerHTML = "";
+            optionsEl.innerHTML = "";
+            btnBack.style.visibility = "hidden";
+            stepLabel.textContent = "";
+
+            defaultCard.style.display = "none";
+            finalView.style.display = "block";
+            syncFinalControls();
+            return;
+          }
+
+          // ====== ВОПРОС ======
+          const s = steps[state.stepIndex];
+
+          defaultCard.style.display = "flex";
+          finalView.style.display = "none";
+          btnBack.style.visibility =
+            state.stepIndex === 0 ? "hidden" : "visible";
+
+          questionTitle.innerHTML = s.title;
+          optionsEl.innerHTML = "";
+
+          const selectedValue = state.answers[s.key];
+
+          s.options.forEach((opt) => {
+            const div = document.createElement("div");
+            div.className = "opt";
+            div.dataset.checked = String(opt.value === selectedValue);
+
+            div.innerHTML = `
+        <div class="radio"></div>
+        <span>${opt.label}</span>
+      `;
+
+            div.addEventListener("click", () => {
+              if (state.isTransitioning) return;
+
+              state.isTransitioning = true;
+
+              // 1️⃣ Сначала фиксируем выбор
+              state.answers[s.key] = opt.value;
+              div.dataset.checked = "true";
+
+              // 2️⃣ Даём глазу увидеть галочку
+              setTimeout(() => {
+                // 3️⃣ Переходим дальше
+                state.stepIndex++;
+                state.isTransitioning = false;
+                renderStep();
+              }, 220); // 👈 тут можно играться: 180–250
+            });
+
+            optionsEl.appendChild(div);
+          });
+
+          setProgress();
+
+          // --- анимация входа ---
+          questionTitle.classList.remove("fade-out");
+          questionTitle.classList.add("fade-in");
+
+          optionsEl.classList.remove("fade-out");
+          optionsEl.classList.add("fade-in");
+        }, 120);
+      }
+
+      function syncFinalControls() {
+        // chips
+        [...channelRow.querySelectorAll(".chip")].forEach((chip) => {
+          chip.dataset.on = String(chip.dataset.channel === state.channel);
+        });
+
+        phoneInput.value = state.phone;
+        agreeChk.checked = state.agreed;
+
+        const phoneOk = normalizeUA(state.phone).length >= 12; // 380XXXXXXXXX (12 digits)
+        submitBtn.disabled = !(phoneOk && state.agreed);
+      }
+
+      function normalizeUA(v) {
+        return (v || "")
+          .replace(/[^\d]/g, "")
+          .replace(/^0+/, "") // убрать ведущие нули если юзер вставил
+          .replace(/^3800/, "380") // чуть-чуть страховка
+          .replace(/^38(?!0)/, "380"); // если ввели 38..., привести к 380...
+      }
+
+      function formatPhoneInput(raw) {
+        // Держим простую маску вида: (__) ___ __ __
+        let digits = (raw || "").replace(/[^\d]/g, "");
+        // если человек вставил +380..., вытащим хвост
+        digits = digits.replace(/^380/, "");
+        // максимум 9 цифр (без 380)
+        digits = digits.slice(0, 9);
+
+        const p1 = digits.slice(0, 2);
+        const p2 = digits.slice(2, 5);
+        const p3 = digits.slice(5, 7);
+        const p4 = digits.slice(7, 9);
+
+        let out = "";
+        out += "(" + p1;
+        if (p1.length === 2) out += ")";
+        if (p2.length) out += " " + p2;
+        if (p3.length) out += " " + p3;
+        if (p4.length) out += " " + p4;
+
+        return out.trim();
+      }
+
+      // ========= Events =========
+      btnBack.addEventListener("click", () => {
+        if (state.stepIndex > 0) {
+          state.stepIndex--;
+          renderStep();
+        }
+      });
+
+      channelRow.addEventListener("click", (e) => {
+        const chip = e.target.closest(".chip");
+        if (!chip) return;
+        state.channel = chip.dataset.channel;
+        syncFinalControls();
+      });
+
+      phoneInput.addEventListener("input", () => {
+        phoneInput.value = formatPhoneInput(phoneInput.value);
+        state.phone = phoneInput.value;
+        syncFinalControls();
+      });
+
+      agreeChk.addEventListener("change", () => {
+        state.agreed = agreeChk.checked;
+        syncFinalControls();
+      });
+
+      submitBtn.addEventListener("click", async () => {
+        // Сбор payload
+        const payload = {
+          ...state.answers,
+          channel: state.channel,
+          phone: "380" + normalizeUA(state.phone).replace(/^380/, ""), // гарантируем 380...
+          page_url: location.href,
+          created_at: new Date().toISOString(),
+        };
+
+        // Можно добавить UTM (если надо)
+        const params = new URLSearchParams(location.search);
+        [
+          "utm_source",
+          "utm_medium",
+          "utm_campaign",
+          "utm_content",
+          "utm_term",
+        ].forEach((k) => {
+          const v = params.get(k);
+          if (v) payload[k] = v;
+        });
+
+        // ✅ Тут подставишь свой endpoint (Google Apps Script / CRM webhook)
+        const ENDPOINT_URL = "https://example.com/webhook"; // <-- ЗАМЕНИ
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Відправляємо...";
+
+        try {
+          // Заглушка: если endpoint не настроен — просто сохраняем в localStorage
+          // Удалишь это после подключения реальной отправки.
+          localStorage.setItem("quiz_lead_last", JSON.stringify(payload));
+
+          // Реальная отправка:
+          // const res = await fetch(ENDPOINT_URL, {
+          //   method: "POST",
+          //   headers: { "Content-Type": "application/json" },
+          //   body: JSON.stringify(payload),
+          // });
+          // if (!res.ok) throw new Error("Bad response");
+
+          showToast("Заявку відправлено ✅");
+          submitBtn.textContent = "Відправлено ✅";
+        } catch (err) {
+          console.error(err);
+          showToast("Помилка відправки ❌");
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Отримати точний розрахунок вартості";
+        }
+      });
+
+      // ========= Init =========
+      renderStep();
+    </script>
+  </body>
+</html>
