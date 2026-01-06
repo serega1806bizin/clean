@@ -34,7 +34,11 @@
             <div class="options" id="options"></div>
 
             <div class="nav">
-              <button class="btn" id="btnBack" type="button">Назад</button>
+              <button class="btn-back" id="btnBack" type="button">Назад</button>
+
+              <button class="btn btn-next" id="btnNext" type="button">
+                Далі →
+              </button>
             </div>
           </section>
 
@@ -44,23 +48,67 @@
               <div class="intro">
                 <div class="hero">
                   <div class="person">
-                    <img src="woman.png" alt="Менеджер" />
+                    <img src="men.png" alt="Менеджер" />
+
+                    <div class="label label--name">
+                      <span>Максим</span>
+                    </div>
+
+                    <div class="label label--role">
+                      <span>Менеджер “Партнер Клін”</span>
+                    </div>
                   </div>
                 </div>
 
                 <div class="pitch">
-                  Дайте відповідь на запитання,
-                  <small>щоб ми могли розрахувати вартість</small>
+                  <div class="pitch__inner">
+                    Дайте відповідь на запитання,
+                    <small>щоб ми могли розрахувати вартість</small>
+                  </div>
                 </div>
               </div>
               <div class="benefits">
                 <div class="benefitsTitle">В кінці теста ви отримаєте:</div>
+
                 <div class="benefitsRow">
                   <div class="benefit">
-                    Розрахунок вартості<br />та строків роботи
+                    <div class="benefit__img">
+                      <img src="b1.avif" alt="" />
+                    </div>
+                    <span>
+                      Розрахунок вартості<br />
+                      та строків роботи
+                    </span>
                   </div>
-                  <div class="benefit">Знижку 10%<br />на перше прибирання</div>
-                  <div class="benefit">1 з 3<br />подарунків на вибір</div>
+
+                  <div class="benefit">
+                    <div class="benefit__img">
+                      <img src="b2.avif" height="74" alt="" />
+                    </div>
+                    <span>Знижку 10%<br />на перше прибирання</span>
+                  </div>
+
+                  <div class="benefit">
+                    <div class="benefit-media benefit-media--gifts">
+                      <img
+                        src="b3.avif"
+                        class="gift gift--logo"
+                        alt=""
+                      />
+                      <img
+                        src="b4.avif"
+                        class="gift gift--aroma"
+                        alt=""
+                      />
+                      <img
+                        src="b5.avif"
+                        class="gift gift--candle"
+                        alt=""
+                      />
+                    </div>
+
+                    <span>1 з 3<br />подарунків на вибір</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -109,10 +157,10 @@
       </div>
     </div>
 
-    <div class="toast" id="toast">Готово</div>
-
     <script>
       // ========= Config (вопросы/варианты) =========
+      const btnNext = document.getElementById("btnNext");
+
       const steps = [
         {
           key: "place",
@@ -235,14 +283,13 @@
 
           defaultCard.style.display = "flex";
           finalView.style.display = "none";
-          btnBack.style.visibility =
-            state.stepIndex === 0 ? "hidden" : "visible";
+          // btnBack.style.visibility =
+          //   state.stepIndex === 0 ? "hidden" : "visible";
 
           questionTitle.innerHTML = s.title;
           optionsEl.innerHTML = "";
 
           const selectedValue = state.answers[s.key];
-
           s.options.forEach((opt) => {
             const div = document.createElement("div");
             div.className = "opt";
